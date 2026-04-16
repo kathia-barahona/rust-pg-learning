@@ -1,25 +1,45 @@
 use crate::cli::Args;
-use std::env;
+
+#[derive(Debug)]
+pub struct PostgresConfig {
+    pub host: String,
+    pub port: u16,
+    pub user: String,
+    pub password: String,
+    pub database: String,
+}
+
+impl PostgresConfig {
+    pub fn address(&self) -> String {
+        format!("{}:{}", self.host, self.port)
+    }
+}
+
+#[derive(Debug)]
+pub struct ProxyConfig {
+    pub port: u16,
+    pub host: String,
+}
 
 #[derive(Debug)]
 pub struct Config {
-    pub server_port: u16,
-    pub proxy_port: u16,
+    pub proxy: ProxyConfig,
+    pub postgres: PostgresConfig,
 }
 
 pub fn load_config(args: Args) -> Config {
-    let server_port = args
-        .server_port
-        .or_else(|| env::var("SERVER_PORT").ok().and_then(|v| v.parse().ok()))
-        .unwrap_or(5050);
+    let proxy = ProxyConfig {
+        port: args.proxy.port,
+        host: args.proxy.host,
+    };
 
-    let proxy_port = args
-        .proxy_port
-        .or_else(|| env::var("PROXY_PORT").ok().and_then(|v| v.parse().ok()))
-        .unwrap_or(5000);
+    let postgres = PostgresConfig {
+        host: args.postgres.host,
+        port: args.postgres.port,
+        user: args.postgres.user,
+        password: args.postgres.password,
+        database: args.postgres.database,
+    };
 
-    Config {
-        server_port,
-        proxy_port,
-    }
+    Config { proxy, postgres }
 }
