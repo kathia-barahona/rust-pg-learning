@@ -2,6 +2,11 @@ use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 
+use clap::Parser;
+
+mod cli;
+mod config;
+
 fn start_proxy(port: u16, server_port: u16) -> std::io::Result<()> {
     for stream in listen_on(port).incoming() {
         proxy_handle_client(stream?, server_port);
@@ -71,16 +76,18 @@ fn listen_on(port: u16) -> TcpListener {
 }
 
 fn main() -> std::io::Result<()> {
-    let proxy_port: u16 = 5000;
-    let server_port: u16 = 5050;
+    let args = cli::Args::parse();
+    let config = config::load_config(args);
+
+    println!("{:?}", config);
 
     let server_handle = thread::spawn(move || {
-        let _ = start_server(server_port);
+        let _ = start_server(config.server_port);
     });
     // wait for server to start
     thread::sleep(std::time::Duration::from_millis(100));
     let proxy_handle = thread::spawn(move || {
-        let _ = start_proxy(proxy_port, server_port);
+        let _ = start_proxy(config.proxy_port, config.server_port);
     });
 
     server_handle.join().unwrap();
